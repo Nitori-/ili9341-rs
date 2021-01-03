@@ -19,5 +19,5 @@ optional = true
 version = "0.6.2"
 
 [features]
-default = ["graphics"]
+default = []
 graphics = ["embedded-graphics"]

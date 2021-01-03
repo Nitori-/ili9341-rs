@@ -98,7 +98,7 @@ pub struct Ili9341<IFACE, RESET> {
 
 impl<PinE, IFACE, RESET> Ili9341<IFACE, RESET>
 where
-    IFACE: WriteOnlyDataCommand,
+    IFACE: Interface,
     RESET: OutputPin<Error = PinE>,
 {
     pub fn new<DELAY, SIZE>(
@@ -153,22 +153,18 @@ where
     }
 
     fn command(&mut self, cmd: Command, args: &[u8]) -> Result<(), Error<PinE>> {
-        self.interface
-            .send_commands(U8Iter(&mut once(cmd as u8)))
-            .map_err(|_| Error::Interface)?;
-        self.interface
-            .send_data(U8Iter(&mut args.iter().cloned()))
-            .map_err(|_| Error::Interface)
+        self.interface.write(cmd as u8, args).map_err(|_| Error::Interface)
     }
 
     fn write_iter<I: IntoIterator<Item = u16>>(&mut self, data: I) -> Result<(), Error<PinE>> {
-        self.command(Command::MemoryWrite, &[])?;
-        self.interface
-            .send_data(U16BEIter(&mut data.into_iter()))
-            .map_err(|_| Error::Interface)
+        self.interface.write_iter(Command::MemoryWrite as u8, data).map_err(|_| Error::Interface)
     }
 
-    fn set_window(&mut self, x0: u16, y0: u16, x1: u16, y1: u16) -> Result<(), Error<PinE>> {
+    pub fn write_data_raw(&mut self, data: &[u8]) -> Result<(), Error<PinE>> {
+        self.interface.write(Command::MemoryWrite as u8, data).map_err(|_| Error::Interface)
+    }
+
+    pub fn set_window(&mut self, x0: u16, y0: u16, x1: u16, y1: u16) -> Result<(), Error<PinE>> {
         self.command(
             Command::ColumnAddressSet,
             &[
